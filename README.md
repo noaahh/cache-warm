@@ -34,10 +34,21 @@ cp commands/cache-warm.md ~/.claude/commands/cache-warm.md
   stays awake.
 - Only one `ScheduleWakeup` slot exists per session — starting
   `/cache-warm` while an unrelated `/loop` is active will replace it.
-- Only useful on API-key / token-metered billing. On Pro/Max subscription
-  plans your quota is gated by request count, not token cost — every ping
-  eats your 5-hour quota for no benefit. Don't use this on a subscription
-  plan.
+- Billing/quota impact: Anthropic's API docs confirm cache-*read* tokens
+  don't count toward rate limits at all — only fresh input, cache-*write*
+  tokens, and output do (see
+  [rate-limits docs](https://platform.claude.com/docs/en/api/rate-limits#cache-aware-itpm)).
+  That's documented for API-key orgs specifically; Anthropic doesn't
+  publish the exact formula behind the Pro/Max 5-hour/weekly limits, but
+  independent reporting describes them the same way — usage/context-size
+  driven, not a flat per-request counter — and explicitly names a cold
+  cache after a break as a real cost on subscriptions too (your first
+  message back reprocessing the full context at normal rates). So the
+  "don't use this on a subscription" claim some similar tools make doesn't
+  hold up under what's actually documented; each ping here should cost
+  close to nothing against either billing model, cache reads being what
+  they are. Not independently verified against the exact Pro/Max formula
+  since Anthropic doesn't publish it.
 - This relies on a documented but not contractually guaranteed property
   of Anthropic's prompt cache (a cache read resets the TTL). It could
   change without notice.
@@ -67,3 +78,8 @@ solves the same problem and is worth a look — same underlying trick
   and Claude replies to it, visible in the transcript. This command's
   pings carry no user-facing text — just a `ScheduleWakeup` call, so
   nothing shows up as a fake exchange.
+- **Subscription billing**: their README warns this whole class of trick
+  "makes things worse" on Pro/Max because quota is gated by request count.
+  That doesn't match what Anthropic's rate-limit docs say about cache-read
+  tokens (see Notes above) — worth checking that claim yourself before
+  trusting either project's take on it.
